@@ -1,6 +1,7 @@
-import PlayAxis.RichProjectMatrix
+ThisBuild / organization := "com.bokun"
+ThisBuild / version      := "0.1-SNAPSHOT"
 
-ThisBuild / organization := "com.github.dwickern"
+name := "sbt-swagger-play"
 
 lazy val play27 = PlayAxis("2.7.9")
 lazy val play28 = PlayAxis("2.8.7")
@@ -12,16 +13,37 @@ lazy val scala212 = "2.12.13"
 lazy val scala213 = "2.13.4"
 lazy val scala3 = "3.3.1"
 
+val swaggerVersion = "2.2.22"
+val playVersion = "2.8.17"
+
 lazy val swaggerPlayVersion = "4.0.0"
+
+def scalaJava8Compat(scalaVersion: String) = "org.scala-lang.modules" %% "scala-java8-compat" %
+  (CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, major)) if major >= 13 => "1.0.2"
+    case _                               => "0.9.1"
+  })
 
 lazy val root = (project in file("."))
   .aggregate(plugin.projectRefs: _*)
-  .aggregate(pluginTests.projectRefs: _*)
   .aggregate(runner.projectRefs: _*)
-  .aggregate(testPlugin)
   .settings(
     name := "sbt-swagger-play",
-    publish / skip := true
+    publish / skip := true,
+    libraryDependencies ++= Seq(
+      scalaJava8Compat(scalaVersion.value),
+      "org.scalatest" %% "scalatest" % "3.2.17" % Test,
+      "ch.qos.logback" % "logback-classic" % "1.2.10" % Provided,
+      "org.slf4j" % "slf4j-simple" % "1.7.26" % Provided,
+      "io.swagger.core.v3" % "swagger-core" % swaggerVersion,
+      "io.swagger.core.v3" % "swagger-annotations" % swaggerVersion,
+      "io.swagger.core.v3" % "swagger-models" % swaggerVersion,
+      "io.swagger.core.v3" % "swagger-jaxrs2" % swaggerVersion,
+      "javax.ws.rs" % "javax.ws.rs-api" % "2.0.1",
+      "com.github.pureconfig" %% "pureconfig" % "0.17.1",
+      "com.typesafe.play" %% "play" % playVersion,
+      "com.typesafe.play" %% "routes-compiler" % playVersion,
+    )
   )
 
 lazy val plugin = (projectMatrix in file("sbt-plugin"))
@@ -31,47 +53,10 @@ lazy val plugin = (projectMatrix in file("sbt-plugin"))
     _.enablePlugins(BuildInfoPlugin).settings(
       name := "sbt-swagger-play",
       sbtPlugin := true,
-      addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.7.9" % Provided),
+      addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.8.17" % Provided),
       buildInfoKeys := Seq[BuildInfoKey](version),
-      buildInfoPackage := "com.github.dwickern.sbt",
+      buildInfoPackage := "com.bokun.sbt",
     )
-  )
-
-lazy val pluginTests = plugin
-  .enablePlugins(ScriptedPlugin)
-  .settings(
-    compile / skip := true,
-    publish / skip := true,
-    ideSkipProject.withRank(KeyRanks.Invisible) := true,
-    scriptedLaunchOpts ++= Seq(
-      "-Xmx1024M",
-      s"-Dplugin.version=${version.value}"
-    ),
-    scriptedBufferLog := true,
-    scriptedDependencies := Def.task(())
-      .dependsOn(plugin.jvm(false) / publishLocal)
-      .dependsOn(testPlugin / publishLocal)
-      .dependsOn(runner.projectRefs.map(_ / publishLocal).join)
-      .value
-  )
-  .scriptedTests(play30, scala3)
-  .scriptedTests(play30, scala213)
-  .scriptedTests(play29, scala3)
-  .scriptedTests(play29, scala213)
-  .scriptedTests(play288, scala213)
-  .scriptedTests(play288, scala212)
-  .scriptedTests(play28, scala213)
-  .scriptedTests(play28, scala212)
-  .scriptedTests(play27, scala213)
-  .scriptedTests(play27, scala212)
-
-lazy val testPlugin = (project in file("test-plugin"))
-  .settings(
-    name := "sbt-swagger-play-testkit",
-    sbtPlugin := true,
-    libraryDependencies += "com.typesafe.play" %% "play-json" % "2.9.2",
-    publish := {},
-    PgpKeys.publishSigned := {},
   )
 
 lazy val runner = (projectMatrix in file("runner"))
@@ -79,78 +64,35 @@ lazy val runner = (projectMatrix in file("runner"))
     name := "sbt-swagger-play-runner",
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "3.2.17" % Test,
-      "ch.qos.logback" % "logback-classic" % "1.2.12" % Test,
+      "ch.qos.logback" % "logback-classic" % "1.2.10" % Provided,
+      "io.swagger.core.v3" % "swagger-core" % swaggerVersion,
+      "io.swagger.core.v3" % "swagger-annotations" % swaggerVersion,
+      "io.swagger.core.v3" % "swagger-models" % swaggerVersion,
+      "io.swagger.core.v3" % "swagger-jaxrs2" % swaggerVersion,
+      "javax.ws.rs" % "javax.ws.rs-api" % "2.0.1",
+      "com.github.pureconfig" %% "pureconfig" % "0.17.1",
+      "com.typesafe.play" %% "play" % playVersion,
+      "com.typesafe.play" %% "routes-compiler" % playVersion,
     ),
-  )
-  .customRow(
-    scalaVersions = Seq(scala3, scala213),
-    axisValues = Seq(play30, VirtualAxis.jvm),
-    _.settings(
-      moduleName := "sbt-swagger-play3.0-runner",
-      libraryDependencies ++= Seq(
-        "com.github.dwickern" %% "swagger-play3.0" % swaggerPlayVersion,
-        "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.3",
-        "io.swagger" % "swagger-core" % "1.6.11",
-        "io.swagger" % "swagger-parser" % "1.0.67",
-      ),
-    )
-  )
-  .customRow(
-    scalaVersions = Seq(scala3, scala213),
-    axisValues = Seq(play29, VirtualAxis.jvm),
-    _.settings(
-      moduleName := "sbt-swagger-play2.9-runner",
-      libraryDependencies ++= Seq(
-        "com.github.dwickern" %% "swagger-play2.9" % swaggerPlayVersion,
-        "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.3",
-        "io.swagger" % "swagger-core" % "1.6.11",
-        "io.swagger" % "swagger-parser" % "1.0.67",
-      ),
-    )
-  )
-  .customRow(
-    scalaVersions = Seq(scala213, scala212),
+  ).customRow(
+    scalaVersions = Seq(scala212),
     axisValues = Seq(play288, VirtualAxis.jvm),
     _.settings(
       moduleName := "sbt-swagger-play2.8.8-runner",
       libraryDependencies ++= Seq(
-        "com.github.dwickern" %% "swagger-play2.8" % swaggerPlayVersion,
-        "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.11.1",
-        "io.swagger" % "swagger-core" % "1.6.2",
-        "io.swagger" % "swagger-parser" % "1.0.54",
-      ),
-    )
-  )
-  .customRow(
-    scalaVersions = Seq(scala213, scala212),
-    axisValues = Seq(play28, VirtualAxis.jvm),
-    _.settings(
-      moduleName := "sbt-swagger-play2.8-runner",
-      libraryDependencies ++= Seq(
-        "com.github.dwickern" %% "swagger-play2.8" % swaggerPlayVersion,
-        "io.swagger" % "swagger-parser" % "1.0.54",
-      ),
-    )
-  )
-  .customRow(
-    scalaVersions = Seq(scala213, scala212),
-    axisValues = Seq(play27, VirtualAxis.jvm),
-    _.settings(
-      moduleName := "sbt-swagger-play2.7-runner",
-      libraryDependencies ++= Seq(
-        "com.github.dwickern" %% "swagger-play2.7" % swaggerPlayVersion,
-        "io.swagger" % "swagger-parser" % "1.0.47",
+        "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.8",
+        "org.scalatest" %% "scalatest" % "3.2.17" % Test,
+        "ch.qos.logback" % "logback-classic" % "1.2.10" % Provided,
+        "io.swagger.core.v3" % "swagger-core" % swaggerVersion,
+        "io.swagger.core.v3" % "swagger-annotations" % swaggerVersion,
+        "io.swagger.core.v3" % "swagger-models" % swaggerVersion,
+        "io.swagger.core.v3" % "swagger-jaxrs2" % swaggerVersion,
+        "javax.ws.rs" % "javax.ws.rs-api" % "2.0.1",
+        "com.github.pureconfig" %% "pureconfig" % "0.17.1",
+        "com.typesafe.play" %% "play" % playVersion,
+        "com.typesafe.play" %% "routes-compiler" % playVersion,
       ),
     )
   )
 
-ThisBuild / homepage := scmInfo.value.map(_.browseUrl)
 ThisBuild / licenses := Seq(License.MIT)
-ThisBuild / developers := List(
-  Developer(
-    id = "dwickern",
-    name = "Derek Wickern",
-    email = "dwickern@gmail.com",
-    url = url("https://github.com/dwickern")
-  )
-)

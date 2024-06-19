@@ -1,18 +1,19 @@
-package com.github.dwickern.sbt
+package com.bokun.sbt
 
+import com.bokun.sbt.BuildInfo
 import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions}
 import com.typesafe.sbt.web.SbtWeb
 import com.typesafe.sbt.web.SbtWeb.autoImport.Assets
 import play.core.PlayVersion
 import play.sbt.PlayWeb
-import sbt.Keys._
-import sbt._
+import sbt.Keys.*
+import sbt.*
 import sjsonnew.IsoString
 
 import java.net.URLClassLoader
 import java.security.{AccessController, PrivilegedAction}
-import java.util.{Map => JMap}
-import scala.jdk.CollectionConverters._
+import java.util.Map as JMap
+import scala.jdk.CollectionConverters.*
 
 object SwaggerPlayPlugin extends AutoPlugin {
   override def trigger: PluginTrigger = allRequirements
@@ -47,7 +48,7 @@ object SwaggerPlayPlugin extends AutoPlugin {
       val playVersion = VersionNumber(PlayVersion.current)
       val runner = runnerVersions.collectFirst { case (semver, runner) if playVersion.matchesSemVer(semver) => runner }
         .getOrElse { sys.error(s"No runner found for Play version: ${PlayVersion.current}") }
-      "com.github.dwickern" %% runner % BuildInfo.version
+      "com.bokun" %% runner % BuildInfo.version
     },
     swaggerPlayRunnerClasspath := {
       val log = streams.value.log("sbt-swagger-play")
@@ -83,7 +84,7 @@ object SwaggerPlayPlugin extends AutoPlugin {
         type SwaggerRunner = {
           def run(rootPath: File, host: String, validate: Boolean, configuration: JMap[String, Any]): String
         }
-        val mainClass = classLoader.loadClass("com.github.dwickern.swagger.SwaggerRunner$")
+        val mainClass = classLoader.loadClass("com.bokun.SwaggerRunner$")
         val mainInstance = mainClass.getField("MODULE$").get(null).asInstanceOf[SwaggerRunner]
         val conf = swaggerPlayConfiguration.value.map(_.asJava).orNull
         mainInstance.run(baseDirectory.value, swaggerPlayHost.value.orNull, swaggerPlayValidate.value, conf)

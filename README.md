@@ -1,8 +1,5 @@
 # sbt-swagger-play
 
-[![build](https://github.com/dwickern/sbt-swagger-play/workflows/build/badge.svg)](https://github.com/dwickern/sbt-swagger-play/actions)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.dwickern/sbt-swagger-play/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.dwickern/sbt-swagger-play)
-
 An sbt plugin which runs [swagger-play](https://github.com/dwickern/swagger-play) as part of your build.
 
 Advantages:
@@ -14,7 +11,7 @@ Advantages:
 
 In `project/plugins.sbt`:
 ```sbt
-addSbtPlugin("com.github.dwickern" % "sbt-swagger-play" % "0.6.0")
+addSbtPlugin("com.bokun" % "sbt-swagger-play" % "0.1-SNAPSHOT")
 ```
 
 In `build.sbt`:
