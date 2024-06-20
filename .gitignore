@@ -13,3 +13,4 @@ bin
 .metals
 **/.bloop
 **/metals.sbt
+.idea/
